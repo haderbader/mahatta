@@ -61,6 +61,7 @@ export function connectSocket(serviceId: number, onMessage: (m: Msg) => void) {
   socket.on('message', (m: { id: number; fr: string; ar: string; created_at: number }) =>
     onMessage({ id: m.id, at: m.created_at, fr: m.fr, ar: m.ar, ack: false }));
   socket.on('connect', () => void flush());
+  socket.on('reset', () => useStore.getState().reset()); // demo reset from the meeting page
   return socket;
 }
 export const syncSocket = () => {

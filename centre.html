@@ -650,7 +650,7 @@ td.num,th.num{text-align:right}
   let busy=false;
   function pull(){if(busy)return;busy=true;fetch('/api/centre/state').then(r=>r.json()).then(apply).catch(()=>{}).finally(()=>{busy=false})}
   pull();setInterval(pull,10000);
-  if(window.io){const s=io({query:{centre:'1'}});['event','service','service-end','message','event-validated','report'].forEach(e=>s.on(e,pull))}
+  if(window.io){const s=io({query:{centre:'1'}});['event','service','service-end','message','event-validated','report','reset'].forEach(e=>s.on(e,pull))}
 })();
 </script>
 </body></html>

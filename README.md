@@ -8,6 +8,10 @@ Tablette de cabine du conducteur (SNTF), portée du prototype HTML vers une vrai
 - **QR cabines** `/cabines` : codes à imprimer (`qrcode`) pour les rames Z-217 et Z-305.
 - **GPS réel** : bouton « GPS réel » dans la barre de démo (vitesse via Geolocation API) ; sinon vitesse simulée.
 
+## Page de démonstration `/demo`
+
+Une seule page, trois onglets (Conducteur, Centre de pilotage, Voyageur) sur les mêmes données en direct, plus « Côte à côte » pour tout voir sur un écran. Le hash choisit l'interface : `/demo#conducteur` sur la tablette, `/demo#centre` sur l'ordinateur, `/demo#voyageur` sur le téléphone. Le bouton « Appareils » affiche les QR codes d'accès par adresse réseau local ; « Réinitialiser » remet la démo à zéro sur tous les appareils. Démo de réunion, pas l'architecture cible.
+
 ## Application voyageur `/voyageur`
 
 PWA mobile (FR / AR RTL) : état du trafic **alimenté en direct par les déclarations des conducteurs** (Socket.IO), prochains départs, itinéraires (calcul testé dans `shared/routing.ts`), suivi du train déclaré, billets achetés (paiement simulé) avec **QR tournant signé HMAC toutes les 30 s**, contrôle de billet `/voyageur/controle`, signalements envoyés au centre.

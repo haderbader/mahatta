@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a1830">
+<title>Mahatta — démo</title>
+<link rel="stylesheet" href="/src/demo/demo.css">
+</head>
+<body>
+<header class="bar">
+  <img src="/logo.png" alt="SNTF" width="52" height="27" class="logo">
+  <nav class="tabs" role="tablist" aria-label="Interface">
+    <button role="tab" data-tab="conducteur">Conducteur</button>
+    <button role="tab" data-tab="centre">Centre de pilotage</button>
+    <button role="tab" data-tab="voyageur">Voyageur</button>
+    <button role="tab" data-tab="tout" class="wide-only">Côte à côte</button>
+  </nav>
+  <span class="grow"></span>
+  <span id="live" class="live" title="Connexion temps réel">●</span>
+  <button id="share" class="ghost" aria-haspopup="dialog">Appareils</button>
+  <button id="reset" class="ghost danger">Réinitialiser</button>
+</header>
+
+<main id="stage" data-tab="conducteur">
+  <section class="pane" data-pane="conducteur"><iframe title="Conducteur" data-src="/" allow="camera; geolocation"></iframe></section>
+  <section class="pane" data-pane="centre"><iframe title="Centre de pilotage" data-src="/centre"></iframe></section>
+  <section class="pane" data-pane="voyageur"><iframe title="Voyageur" data-src="/voyageur"></iframe></section>
+</main>
+
+<dialog id="dlg">
+  <form method="dialog"><button class="x" aria-label="Fermer">×</button></form>
+  <h2>Ouvrir sur un autre appareil</h2>
+  <p class="hint">Les appareils doivent être sur le même réseau Wi‑Fi que cet ordinateur.</p>
+  <div id="qrs" class="qrs"></div>
+</dialog>
+<div id="toast" class="toast" hidden></div>
+<script type="module" src="/src/demo/main.ts"></script>
+</body>
+</html>

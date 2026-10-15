@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { db } from './db.ts';
 import { createHmac, randomUUID } from 'node:crypto';
+import { networkInterfaces } from 'node:os';
 import { CAUSES, TRAINS, RAMES, parseCab, paxMessage } from '../shared/domain.ts';
 import { TRAIN_LINE, type LineKey, type LineStatus } from '../shared/network.ts';
 import { PRODUCTS } from '../shared/tickets.ts';
@@ -130,6 +131,19 @@ app.post('/api/reports', async (req) => {
   const r = db.prepare('INSERT INTO reports (passenger_id,category,train,text,created_at) VALUES (?,?,?,?,?)').run(
     b.passengerId ?? null, b.category, b.train ?? null, b.text ?? null, Date.now());
   io.to('centre').emit('report', { id: Number(r.lastInsertRowid), category: b.category, train: b.train, text: b.text, at: Date.now() });
+  return { ok: true };
+});
+
+// ---- Demo helpers (meeting use): LAN addresses to open on other devices, and a one-click reset ----
+app.get('/api/demo/info', async () => {
+  const addresses = Object.values(networkInterfaces()).flat()
+    .filter((i) => i && i.family === 'IPv4' && !i.internal).map((i) => i!.address);
+  return { addresses, port: Number(process.env.PORT ?? 3001) };
+});
+app.post('/api/demo/reset', async () => {
+  db.exec('DELETE FROM events; DELETE FROM validations; DELETE FROM messages; DELETE FROM reports; DELETE FROM services;');
+  io.emit('reset');
+  broadcastNetwork();
   return { ok: true };
 });
 
@@ -278,7 +292,7 @@ app.get('/api/centre', async () => ({
 const dist = resolve('dist');
 if (existsSync(dist)) {
   await app.register(fastifyStatic, { root: dist });
-  app.setNotFoundHandler((req, reply) => reply.sendFile(req.url.startsWith('/voyageur') ? 'voyageur.html' : req.url.startsWith('/centre') ? 'centre.html' : 'index.html'));
+  app.setNotFoundHandler((req, reply) => reply.sendFile(req.url.startsWith('/voyageur') ? 'voyageur.html' : req.url.startsWith('/centre') ? 'centre.html' : req.url.startsWith('/demo') ? 'demo.html' : 'index.html'));
 }
 
 await app.listen({ port: Number(process.env.PORT ?? 3001), host: '0.0.0.0' });
