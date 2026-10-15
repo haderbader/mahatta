@@ -6,7 +6,6 @@ import '@fontsource/noto-kufi-arabic/400.css'; import '@fontsource/noto-kufi-ara
 import './styles.css';
 import { useStore } from './store.ts';
 import { Driver } from './Driver.tsx';
-import { Centre } from './Centre.tsx';
 import { Cabines } from './Cabines.tsx';
 
 function App() {
@@ -19,7 +18,6 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [lang, theme]);
   if (!ready) return null;
-  if (location.pathname.startsWith('/centre')) return <Centre />;
   if (location.pathname.startsWith('/cabines')) return <Cabines />;
   return <Driver />;
 }

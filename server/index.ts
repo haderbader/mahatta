@@ -204,6 +204,39 @@ app.post('/api/messages', async (req) => {
   return msg;
 });
 
+/** Control-room view: per-service live state + aggregate stats, all derived from driver events. */
+function centreState() {
+  type Ev = { kind: string; data: string; at: number; service_id: number };
+  const services = all<{ id: number; train: string; rame: string; started_at: number; ended_at: number | null }>(
+    'SELECT * FROM services ORDER BY id DESC LIMIT 50');
+  const evs = all<Ev>('SELECT kind,data,at,service_id FROM events ORDER BY at,id');
+  const byCause: Record<string, number> = {};
+  let declarations = 0, resolved = 0, stopMs = 0;
+  const live = services.filter((x) => !x.ended_at).map((sv) => {
+    type CInc = { cause: string; sub: number | null; est: number; at: number };
+    let inc = null as CInc | null;
+    let last = sv.started_at, minutes = 0;
+    for (const e of evs) {
+      if (e.service_id !== sv.id) continue;
+      const d = JSON.parse(e.data);
+      last = Math.max(last, e.at);
+      if (e.kind === 'declare' || e.kind === 'modify') {
+        if (e.kind === 'declare' || !inc) { declarations++; byCause[d.cause] = (byCause[d.cause] ?? 0) + 1; }
+        inc = { cause: d.cause, sub: d.sub ?? null, est: Number(d.est ?? 0), at: (inc as CInc | null)?.at ?? e.at };
+      } else if (e.kind === 'extend' && inc) { inc.est += Number(d.minutes ?? 0); minutes += Number(d.minutes ?? 0); }
+      else if (e.kind === 'resume' && inc) { resolved++; stopMs += e.at - inc.at; inc = null; }
+    }
+    const msgs = all<{ id: number; acked_at: number | null }>('SELECT id,acked_at FROM messages WHERE train=?', sv.train);
+    return { id: sv.id, train: sv.train, rame: sv.rame, startedAt: sv.started_at, incident: inc, lastEventAt: last,
+      pending: msgs.filter((m) => !m.acked_at).length };
+  });
+  return {
+    services: live,
+    stats: { declarations, resolved, byCause, avgStopMin: resolved ? Math.round(stopMs / resolved / 60000) : 0 },
+  };
+}
+app.get('/api/centre/state', async () => centreState());
+
 app.get('/api/centre', async () => ({
   services: all('SELECT * FROM services WHERE ended_at IS NULL ORDER BY id DESC'),
   events: all<{ data: string }>(
@@ -216,7 +249,7 @@ app.get('/api/centre', async () => ({
 const dist = resolve('dist');
 if (existsSync(dist)) {
   await app.register(fastifyStatic, { root: dist });
-  app.setNotFoundHandler((req, reply) => reply.sendFile(req.url.startsWith('/voyageur') ? 'voyageur.html' : 'index.html'));
+  app.setNotFoundHandler((req, reply) => reply.sendFile(req.url.startsWith('/voyageur') ? 'voyageur.html' : req.url.startsWith('/centre') ? 'centre.html' : 'index.html'));
 }
 
 await app.listen({ port: Number(process.env.PORT ?? 3001), host: '0.0.0.0' });
