@@ -13,7 +13,6 @@ import { PRODUCTS } from '../../shared/tickets.ts';
 import { usePax } from './store.ts';
 import { useNetwork, useMinutes, hm, type Network } from './hooks.ts';
 import { departures } from './data.ts';
-import { MapView } from './MapView.tsx';
 import { LineBadge, StatusPill, Header, Chev, BASE } from './ui.tsx';
 
 type Lang = 'fr' | 'ar';
@@ -66,40 +65,15 @@ export function HomeScreen() {
   const now = useMinutes();
   const { favs, set, from } = usePax();
   const station = favs[0] ?? from;
-  const box = useRef<HTMLDivElement>(null);
-  const [H, setH] = useState(600);
-  const [snap, setSnap] = useState(1);
-  useEffect(() => {
-    const el = box.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => setH(el.clientHeight));
-    ro.observe(el);
-    setH(el.clientHeight);
-    return () => ro.disconnect();
-  }, []);
-  // sheet is H tall and positioned by translateY: expanded / half / peek
-  const snaps = [0, Math.round(H * 0.5), Math.max(0, H - 150)];
-  const top = 0, bottom = snaps[2];
   const alerts = LINE_KEYS.filter((k) => net.status[k] && net.status[k]!.status !== 'ok');
   return (
-    <div ref={box} className="relative h-full overflow-hidden">
-      <MapView className="absolute inset-0" trains={net.trains} focus={[station]} onStation={(s) => nav(`${BASE}/gare/${encodeURIComponent(s)}`)} />
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between p-3 pt-[calc(env(safe-area-inset-top)+12px)]">
+    <div className="pb-6">
+      <div className="flex items-center justify-between p-4 pt-[calc(env(safe-area-inset-top)+16px)]">
         <img src="/logo.png" alt="SNTF" width={78} height={41} className="rounded-xl bg-white/90 p-1.5" />
-        <span className={`pointer-events-auto rounded-full px-3 py-1.5 text-xs font-bold ${net.live ? 'bg-[var(--ok-s)] text-[var(--ok)]' : 'bg-[var(--bad-s)] text-[var(--bad)]'}`}>
+        <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${net.live ? 'bg-[var(--ok-s)] text-[var(--ok)]' : 'bg-[var(--bad-s)] text-[var(--bad)]'}`}>
           ● {net.live ? t('home.live') : t('offline')}</span>
       </div>
-      <motion.div drag="y" dragElastic={0.05} dragMomentum={false} dragConstraints={{ top: top, bottom: bottom }}
-        animate={{ y: snaps[snap] }} transition={{ type: 'spring', stiffness: 380, damping: 38 }}
-        onDragEnd={(_, i) => {
-          const cur = snaps[snap] + i.offset.y + i.velocity.y * 0.15;
-          const next = snaps.reduce((best, v, idx) => (Math.abs(v - cur) < Math.abs(snaps[best] - cur) ? idx : best), 0);
-          setSnap(next);
-        }}
-        className="absolute inset-x-0 top-0 z-20 flex flex-col rounded-t-3xl border border-[var(--line)] bg-[var(--bg)] shadow-2xl"
-        style={{ height: H }}>
-        <div className="mx-auto my-2 h-1.5 w-10 shrink-0 cursor-grab rounded-full bg-[var(--line)]" />
-        <div className="min-h-0 grow overflow-y-auto px-4 pb-24" onPointerDownCapture={(e) => e.stopPropagation()}>
+      <div className="px-4">
               <button onClick={() => nav(`${BASE}/itineraire`)} className="flex w-full items-center gap-3 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4 text-start text-lg font-semibold">
                 <Search size={20} />{t('home.where')}</button>
               <div className="mt-3 flex gap-2 overflow-x-auto">
@@ -122,7 +96,6 @@ export function HomeScreen() {
                     <LineBadge k={k} size={34} status={st(net, k)} /><span className="text-xs font-semibold text-[var(--muted)]">{t(`st.${st(net, k)}Short`)}</span></button>))}
               </div>
             </div>
-      </motion.div>
     </div>
   );
 }
@@ -153,7 +126,6 @@ export function ItineraryScreen() {
             <StationInput value={to} onChange={(v) => set({ to: v })} label={t('itin.to')} /></div>
           <button aria-label={t('itin.swap')} onClick={() => set({ from: to, to: from })} className="grid size-11 place-items-center rounded-full bg-[var(--acc-s)] text-[var(--color-accent)]"><ArrowUpDown size={20} /></button>
         </div>
-        {known && <MapView className="mt-3 h-40 overflow-hidden rounded-2xl border border-[var(--line)]" focus={[from, to]} trains={net.trains} />}
         {!routes.length ? (
           <div className="card mt-4 p-4"><b>{t('itin.none')}</b><p className="m-0 text-sm text-[var(--muted)]">{t('itin.noneHint')}</p></div>
         ) : (<>
@@ -192,7 +164,6 @@ export function RouteDetailScreen() {
     <div className="pb-6">
       <Header title={`${first.a} → ${r.legs[r.legs.length - 1].b}`} />
       <div className="px-4">
-        <MapView className="h-44 overflow-hidden rounded-2xl border border-[var(--line)]" focus={r.legs.flatMap((l) => [l.a, l.b])} trains={net.trains} />
         <Card className="mt-4 p-4">
           <ol className="m-0 list-none p-0">
             {r.legs.map((l, i) => (
@@ -227,7 +198,6 @@ export function StationScreen() {
       <Header title={name} right={<button aria-label={t(fav ? 'station.unfav' : 'station.fav')} onClick={() => { set({ favs: fav ? favs.filter((f) => f !== name) : [name, ...favs] }); toast(t(fav ? 'station.unfav' : 'station.fav')); }}
         className="grid size-10 place-items-center rounded-full border border-[var(--line)] bg-[var(--card)]"><Star size={20} fill={fav ? 'currentColor' : 'none'} className="text-[var(--color-accent)]" /></button>} />
       <div className="px-4">
-        <MapView className="h-40 overflow-hidden rounded-2xl border border-[var(--line)]" focus={[name]} trains={net.trains} />
         <div className="mt-3 flex flex-wrap gap-2">{STATIONS[name].map((k) => <button key={k} onClick={() => nav(`${BASE}/ligne/${k}`)}><LineBadge k={k} size={32} status={st(net, k)} /></button>)}</div>
         <Sec>{t('station.departures')}</Sec>
         <Card>{departures(name, now, net.delays, 2).map((d, i) => <DepRow key={i} d={d} n={net} now={now} />)}</Card>
@@ -257,7 +227,9 @@ export function LineScreen() {
         <div className="flex items-center gap-3"><LineBadge k={k} size={40} status={st(net, k)} /><StatusPill s={st(net, k)} /></div>
         {s && s.status !== 'ok' && <p className="mt-3 rounded-2xl p-3 text-sm" style={{ background: s.status === 'bad' ? 'var(--bad-s)' : 'var(--warn-s)' }}><b>{s.title?.[lang]}</b><br />{s.detail?.[lang]}</p>}
         {k === 'Z' && <p className="mt-3 rounded-2xl p-3 text-sm" style={{ background: 'var(--acc-s)' }}><b>{t('traffic.works')}</b><br />{t('works.z')}</p>}
-        <MapView className="mt-3 h-44 overflow-hidden rounded-2xl border border-[var(--line)]" focus={[L.stations[0], L.stations[L.stations.length - 1]]} trains={net.trains.filter((x) => x.line === k)} />
+        {net.trains.filter((x) => x.line === k).map((x) => (
+          <p key={x.n} className="mt-3 rounded-2xl p-3 text-sm font-semibold" style={{ background: 'var(--acc-s)' }}>
+            {t(x.stopped ? 'map.trainStopped' : 'map.train', { n: x.n })} · {x.from} → {x.to}</p>))}
         <Sec>{t('line.stations')}</Sec>
         <Card className="p-4"><ol className="m-0 list-none p-0">{L.stations.map((s2) => (
           <li key={s2}><button onClick={() => nav(`${BASE}/gare/${encodeURIComponent(s2)}`)} className="relative flex min-h-11 w-full items-center gap-3 border-s-4 ps-4 text-start font-semibold" style={{ borderColor: L.color }}>

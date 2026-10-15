@@ -15,7 +15,6 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans)
 [dir=rtl] body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--color-accent);outline-offset:2px}
-.maplibregl-ctrl-attrib{font-size:10px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:16px}
 .num{font-variant-numeric:tabular-nums}
 [dir=rtl] .flip{transform:scaleX(-1)}

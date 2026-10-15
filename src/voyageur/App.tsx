@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { Toaster } from 'sonner';
 import i18n from './i18n.ts';
 import { usePax } from './store.ts';
@@ -8,16 +8,14 @@ import { HomeScreen, ItineraryScreen, RouteDetailScreen, StationScreen, LineScre
 
 function Shell() {
   const lang = usePax((s) => s.lang);
-  const { pathname } = useLocation();
   useEffect(() => {
     void i18n.changeLanguage(lang);
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
-  const home = pathname === BASE || pathname === BASE + '/';
   return (
     <div className="mx-auto flex h-full max-w-[480px] flex-col overflow-hidden bg-[var(--bg)] shadow-xl">
-      <main className={`min-h-0 grow ${home ? 'overflow-hidden' : 'overflow-y-auto'}`}>
+      <main className={`min-h-0 grow overflow-y-auto`}>
         <Routes>
           <Route path={BASE} element={<HomeScreen />} />
           <Route path={`${BASE}/itineraire`} element={<ItineraryScreen />} />

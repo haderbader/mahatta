@@ -10,11 +10,11 @@ Tablette de cabine du conducteur (SNTF), portée du prototype HTML vers une vrai
 
 ## Application voyageur `/voyageur`
 
-PWA mobile (FR / AR RTL) : carte réelle (MapLibre GL + OpenStreetMap + OpenRailwayMap), feuille coulissante, état du trafic **alimenté en direct par les déclarations des conducteurs** (Socket.IO), prochains départs, itinéraires (calcul testé dans `shared/routing.ts`), suivi du train déclaré, billets achetés (paiement simulé) avec **QR tournant signé HMAC toutes les 30 s**, contrôle de billet `/voyageur/controle`, signalements envoyés au centre.
+PWA mobile (FR / AR RTL) : état du trafic **alimenté en direct par les déclarations des conducteurs** (Socket.IO), prochains départs, itinéraires (calcul testé dans `shared/routing.ts`), suivi du train déclaré, billets achetés (paiement simulé) avec **QR tournant signé HMAC toutes les 30 s**, contrôle de billet `/voyageur/controle`, signalements envoyés au centre.
 
 Limites : horaires de banlieue théoriques (pas de GTFS SNTF public), position du train fixe (démo), prix indicatifs.
 
-Stack : Vite + React + TypeScript, Tailwind v4, MapLibre GL, vaul, motion, lucide-react, sonner, react-router, zustand, i18next-ready strings, vite-plugin-pwa, Fastify + Socket.IO, SQLite (`node:sqlite`, Node ≥ 22).
+Stack : Vite + React + TypeScript, Tailwind v4, vaul, motion, lucide-react, sonner, react-router, zustand, i18next-ready strings, vite-plugin-pwa, Fastify + Socket.IO, SQLite (`node:sqlite`, Node ≥ 22).
 
 ```bash
 pnpm install
