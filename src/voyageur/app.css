@@ -9,7 +9,7 @@
   --color-line-e: #1e5aa8; --color-line-o: #d9731a; --color-line-z: #2e8b57; --color-line-a: #7a4fb0; --color-line-gl: #0b1d3a;
 }
 :root{--bg:#eef2f6;--card:#fff;--ink:#0b1d3a;--muted:#55627a;--line:#d3dbe5;--ok:#1e7a46;--warn:#9a5208;--bad:#b3261e;--ok-s:#dff1e6;--warn-s:#fcebd6;--bad-s:#fbe1dd;--acc-s:#e2ecf8;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#07101e;--card:#0e1a2e;--ink:#eaf0f8;--muted:#97a6bd;--line:#22324d;--ok:#57c98a;--warn:#f2a85a;--bad:#f2877c;--ok-s:#12301f;--warn-s:#3a2710;--bad-s:#3e1815;--acc-s:#132340;color-scheme:dark}}
+
 html,body,#root{height:100%}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-sans);-webkit-tap-highlight-color:transparent}
 [dir=rtl] body{font-family:'Noto Kufi Arabic',Tahoma,sans-serif}

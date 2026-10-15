@@ -30,13 +30,14 @@ export const useStore = create<State>()(
   persist(
     (setState) => ({
       lang: browserLang(),
-      theme: matchMedia?.('(prefers-color-scheme: light)').matches ? 'light' : 'dark',
+      theme: 'light',
       online: true, gps: false,
       ...(fresh as Pick<State, 'serviceId' | 'rame' | 'train' | 'speed' | 'stopAt' | 'stopIdx' | 'delay' | 'incident' | 'msgs' | 'hist' | 'queue'>),
       set: (p) => setState(p),
       reset: () => setState({ ...fresh } as Partial<State>),
     }),
-    { name: 'mahatta-conducteur', storage: createJSONStorage(() => idb) },
+    { name: 'mahatta-conducteur', storage: createJSONStorage(() => idb), version: 2,
+      migrate: (state) => ({ ...(state as object), theme: 'light' }) as State },
   ),
 );
 
