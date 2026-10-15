@@ -4,7 +4,7 @@ Tablette de cabine du conducteur (SNTF), portée du prototype HTML vers une vrai
 
 - **Cabine** `/` : prise de service par scan QR (caméra réelle, `qr-scanner`), 8 causes d'arrêt, durée, aperçu voyageurs, prolongation, reprise, accusé des messages du centre, changement de rame, fin de service. FR / AR (RTL), jour / nuit.
 - **Hors réseau** : les envois partent dans une file persistée (IndexedDB) et sont rejoués à la reconnexion, de façon idempotente (`clientId`).
-- **Centre de pilotage** `/centre` : tableau de bord FR / AR (TanStack Table, Recharts, Radix) : KPI, trains en service, synoptique, graphique de circulation, causes d'arrêt du jour, fil des déclarations, signalements voyageurs, envoi de messages (modèles FR/AR) avec accusés de lecture, le tout en direct.
+- **Centre de pilotage** `/centre` : la maquette `SNTF Centre de pilotage` reprise telle quelle (cartes schématiques, synoptique, graphique de circulation, statistiques). Les trains qui ont un service ouvert en cabine (1042, 1047) sont pilotés par les vraies déclarations ; le reste de la flotte reste simulé. Le régulateur valide les causes sensibles avant diffusion aux voyageurs et peut envoyer des messages (modèles FR/AR) au conducteur.
 - **QR cabines** `/cabines` : codes à imprimer (`qrcode`) pour les rames Z-217 et Z-305.
 - **GPS réel** : bouton « GPS réel » dans la barre de démo (vitesse via Geolocation API) ; sinon vitesse simulée.
 

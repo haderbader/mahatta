@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS events (
   kind TEXT NOT NULL, data TEXT NOT NULL,
   at INTEGER NOT NULL, received_at INTEGER NOT NULL
 );
+CREATE TABLE IF NOT EXISTS validations (
+  client_id TEXT PRIMARY KEY, validated_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS tickets (
   id TEXT PRIMARY KEY, passenger_id TEXT NOT NULL, product TEXT NOT NULL,
   valid_from INTEGER NOT NULL, valid_to INTEGER, trips_left INTEGER,

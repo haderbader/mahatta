@@ -45,16 +45,20 @@ function networkStatus() {
     // The cab app keeps the "next stop" fixed (index 2) in this demo; the train sits 60% of the way to it.
     const def = TRAINS.find((x) => x.n === s.train);
     if (def) trains.push({ n: s.train, line, from: def.stops[1][0], to: def.stops[2][0], progress: 0.6, stopped: false });
-    type Inc = { cause: string; est: number; at: number };
+    type Inc = { cause: string; est: number; at: number; hidden: boolean };
     let cur = null as Inc | null;
-    for (const e of all<{ kind: string; data: string; at: number }>(
-      "SELECT kind,data,at FROM events WHERE service_id=? AND kind IN ('declare','modify','extend','resume') ORDER BY at,id", s.id)) {
+    for (const e of all<{ kind: string; data: string; at: number; client_id: string }>(
+      "SELECT kind,data,at,client_id FROM events WHERE service_id=? AND kind IN ('declare','modify','extend','resume') ORDER BY at,id", s.id)) {
       const d = JSON.parse(e.data);
       if (e.kind === 'resume') cur = null;
       else if (e.kind === 'extend' && cur) cur.est += Number(d.minutes ?? 0);
-      else if (e.kind === 'declare' || e.kind === 'modify') cur = { cause: d.cause, est: Number(d.est ?? 0), at: (cur as Inc | null)?.at ?? e.at };
+      else if (e.kind === 'declare' || e.kind === 'modify') {
+        const sens = !!CAUSES.find((x) => x.k === d.cause)?.sens;
+        const ok = !sens || !!one('SELECT 1 FROM validations WHERE client_id=?', e.client_id);
+        cur = { cause: d.cause, est: Number(d.est ?? 0), at: (cur as Inc | null)?.at ?? e.at, hidden: !ok };
+      }
     }
-    if (!cur) continue;
+    if (!cur || cur.hidden) continue;
     const c = CAUSES.find((x) => x.k === cur!.cause);
     if (!c) continue;
     const bad = c.k === 'acc' || cur.est >= 30;
@@ -206,14 +210,15 @@ app.post('/api/messages', async (req) => {
 
 /** Control-room view: per-service live state + aggregate stats, all derived from driver events. */
 function centreState() {
-  type Ev = { kind: string; data: string; at: number; service_id: number };
+  type Ev = { kind: string; data: string; at: number; service_id: number; client_id: string };
   const services = all<{ id: number; train: string; rame: string; started_at: number; ended_at: number | null }>(
     'SELECT * FROM services ORDER BY id DESC LIMIT 50');
-  const evs = all<Ev>('SELECT kind,data,at,service_id FROM events ORDER BY at,id');
+  const evs = all<Ev>('SELECT kind,data,at,service_id,client_id FROM events ORDER BY at,id');
+  const feed: Record<string, unknown>[] = [];
   const byCause: Record<string, number> = {};
   let declarations = 0, resolved = 0, stopMs = 0;
   const live = services.filter((x) => !x.ended_at).map((sv) => {
-    type CInc = { cause: string; sub: number | null; est: number; at: number };
+    type CInc = { cause: string; sub: number | null; est: number; at: number; clientId: string; sens: boolean; validated: boolean };
     let inc = null as CInc | null;
     let last = sv.started_at, minutes = 0;
     for (const e of evs) {
@@ -222,20 +227,44 @@ function centreState() {
       last = Math.max(last, e.at);
       if (e.kind === 'declare' || e.kind === 'modify') {
         if (e.kind === 'declare' || !inc) { declarations++; byCause[d.cause] = (byCause[d.cause] ?? 0) + 1; }
-        inc = { cause: d.cause, sub: d.sub ?? null, est: Number(d.est ?? 0), at: (inc as CInc | null)?.at ?? e.at };
+        const def = CAUSES.find((x) => x.k === d.cause);
+        const sens = !!def?.sens;
+        inc = { cause: d.cause, sub: d.sub ?? null, est: Number(d.est ?? 0), at: (inc as CInc | null)?.at ?? e.at,
+          clientId: e.client_id, sens, validated: !sens || !!one('SELECT 1 FROM validations WHERE client_id=?', e.client_id) };
+        if (def) feed.push({ clientId: e.client_id, train: sv.train, kind: e.kind, at: e.at, cause: d.cause, causeFr: def.n.fr,
+          subFr: d.sub != null ? def.sub[d.sub]?.fr ?? null : null, est: inc.est, sens, validated: inc.validated, pax: paxMessage(def, inc.est) });
       } else if (e.kind === 'extend' && inc) { inc.est += Number(d.minutes ?? 0); minutes += Number(d.minutes ?? 0); }
-      else if (e.kind === 'resume' && inc) { resolved++; stopMs += e.at - inc.at; inc = null; }
+      else if (e.kind === 'resume' && inc) {
+        resolved++; stopMs += e.at - inc.at;
+        feed.push({ clientId: e.client_id, train: sv.train, kind: 'resume', at: e.at, causeFr: CAUSES.find((x) => x.k === inc!.cause)?.n.fr ?? '' });
+        inc = null;
+      }
     }
     const msgs = all<{ id: number; acked_at: number | null }>('SELECT id,acked_at FROM messages WHERE train=?', sv.train);
-    return { id: sv.id, train: sv.train, rame: sv.rame, startedAt: sv.started_at, incident: inc, lastEventAt: last,
+    const def = TRAINS.find((x) => x.n === sv.train);
+    const cause = inc ? CAUSES.find((x) => x.k === inc!.cause) : undefined;
+    return { id: sv.id, train: sv.train, rame: sv.rame, startedAt: sv.started_at, lastEventAt: last,
+      incident: inc && cause ? { ...inc, causeFr: cause.n.fr, subFr: inc.sub != null ? cause.sub[inc.sub]?.fr ?? null : null } : null,
+      from: def?.stops[1][0], to: def?.stops[2][0],
       pending: msgs.filter((m) => !m.acked_at).length };
   });
   return {
     services: live,
+    feed: feed.sort((a, b) => Number(b.at) - Number(a.at)).slice(0, 25),
     stats: { declarations, resolved, byCause, avgStopMin: resolved ? Math.round(stopMs / resolved / 60000) : 0 },
   };
 }
 app.get('/api/centre/state', async () => centreState());
+
+// The regulator validates a sensitive declaration: only then is it broadcast to passengers.
+app.post('/api/events/:clientId/validate', async (req, reply) => {
+  const { clientId } = req.params as { clientId: string };
+  if (!one('SELECT id FROM events WHERE client_id=?', clientId)) return reply.code(404).send({ error: 'not_found' });
+  db.prepare('INSERT OR IGNORE INTO validations (client_id, validated_at) VALUES (?,?)').run(clientId, Date.now());
+  broadcastNetwork();
+  io.to('centre').emit('event-validated', { clientId });
+  return { ok: true };
+});
 
 app.get('/api/centre', async () => ({
   services: all('SELECT * FROM services WHERE ended_at IS NULL ORDER BY id DESC'),
